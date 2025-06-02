@@ -1,6 +1,6 @@
 # tokenauton
 
-Tokenauton is an automated research tool that generates AI-powered reports on crypto token fundamentals—including tokenomics, social sentiment, onchain metrics, team, code, and audits—for transparent and efficient digital asset analysis.
+Tokenauton is an automated research tool that generates AI-powered reports on digital token fundamentals—including tokenomics, social sentiment, onchain metrics, team, code, and audits—for transparent and efficient digital asset analysis.
 
 ---
 
