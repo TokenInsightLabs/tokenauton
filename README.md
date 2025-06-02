@@ -1,7 +1,6 @@
 # tokenauton
 
-TokenInsightLabs builds tools to automate and enhance digital asset analysis.  
-tokenauton delivers AI-powered, data-driven insights into token fundamentals for research and transparency.
+Tokenauton is an automated research tool that generates AI-powered reports on crypto token fundamentals—including tokenomics, social sentiment, onchain metrics, team, code, and audits—for transparent and efficient digital asset analysis.
 
 ---
 
