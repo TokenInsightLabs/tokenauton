@@ -1,0 +1,161 @@
+// =====================================================
+// Token Analysis Database Schema - Prisma Implementation
+// 
+// Description: Simplified schema following types.ts structure
+// Version: 2.0.0
+// Created: 2025-06-04
+// =====================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DB_URL")
+  extensions = [uuidOssp(map: "uuid-ossp")]
+}
+
+// =====================================================
+// ENUMS
+// =====================================================
+
+enum SeverityLevel {
+  low
+  medium
+  high
+
+  @@map("severity_level_enum")
+}
+
+// =====================================================
+// CORE MODELS
+// =====================================================
+
+/// Core token information
+model Token {
+  // Primary key
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+
+  // Core fields from types.ts
+  name    String  @db.VarChar(255)
+  symbol  String  @db.VarChar(50)
+  address String  @unique @db.VarChar(255)
+  chainId String? @map("chain_id") @db.VarChar(50)
+
+  // Relations
+  agentResults AgentResult[]
+  reports      Report[]
+
+  // Indexes
+  @@index([symbol], map: "idx_tokens_symbol")
+  @@index([address], map: "idx_tokens_address")
+  @@map("tokens")
+}
+
+/// Analysis results for token sections
+model AgentResult {
+  // Primary key
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+
+  // Foreign key
+  tokenId String @map("token_id") @db.Uuid
+
+  // Core fields from types.ts
+  section       String    @db.VarChar(50)
+  summary       String    @db.Text
+  score         Float?    // Internal use only
+  dataUpdatedAt DateTime? @map("data_updated_at") @db.Timestamptz(6)
+
+  // Relations
+  token    Token     @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  redFlags RedFlag[]
+
+  // Indexes
+  @@index([tokenId], map: "idx_agent_results_token_id")
+  @@index([section], map: "idx_agent_results_section")
+  @@index([dataUpdatedAt], map: "idx_agent_results_data_updated_at")
+  @@map("agent_results")
+}
+
+/// Red flags for risk assessment
+model RedFlag {
+  // Primary key
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+
+  // Foreign key
+  agentResultId String @map("agent_result_id") @db.Uuid
+
+  // Core fields from types.ts
+  category           String        @db.VarChar(100)
+  title              String        @db.VarChar(255)
+  description        String        @db.Text
+  severity           SeverityLevel
+  evidence           String[]      @default([])
+  detectedAt         DateTime?     @map("detected_at") @db.Timestamptz(6)
+  source             String?       @db.VarChar(100)
+  recommendedAction  String?       @map("recommended_action") @db.Text
+
+  // Relations
+  agentResult AgentResult @relation(fields: [agentResultId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([agentResultId], map: "idx_red_flags_agent_result_id")
+  @@index([category], map: "idx_red_flags_category")
+  @@index([severity], map: "idx_red_flags_severity")
+  @@index([detectedAt], map: "idx_red_flags_detected_at")
+  @@map("red_flags")
+}
+
+/// Analysis reports combining all sections
+model Report {
+  // Primary key
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+
+  // Foreign key
+  tokenId String @map("token_id") @db.Uuid
+
+  // Core fields from types.ts
+  summary   String?   @db.Text // Research-only summary, no recommendations
+  createdAt DateTime? @map("created_at") @db.Timestamptz(6)
+  version   String?   @db.VarChar(20)
+
+  // Embedded AgentResult fields for the 7 required sections
+  tokenomicsSection  String? @map("tokenomics_section") @db.Text
+  tokenomicsSummary  String? @map("tokenomics_summary") @db.Text
+  tokenomicsScore    Float?  @map("tokenomics_score")
+
+  sentimentSection  String? @map("sentiment_section") @db.Text
+  sentimentSummary  String? @map("sentiment_summary") @db.Text
+  sentimentScore    Float?  @map("sentiment_score")
+
+  onchainSection  String? @map("onchain_section") @db.Text
+  onchainSummary  String? @map("onchain_summary") @db.Text
+  onchainScore    Float?  @map("onchain_score")
+
+  teamSection  String? @map("team_section") @db.Text
+  teamSummary  String? @map("team_summary") @db.Text
+  teamScore    Float?  @map("team_score")
+
+  codeSection  String? @map("code_section") @db.Text
+  codeSummary  String? @map("code_summary") @db.Text
+  codeScore    Float?  @map("code_score")
+
+  whitepaperSection  String? @map("whitepaper_section") @db.Text
+  whitepaperSummary  String? @map("whitepaper_summary") @db.Text
+  whitepaperScore    Float?  @map("whitepaper_score")
+
+  auditSection  String? @map("audit_section") @db.Text
+  auditSummary  String? @map("audit_summary") @db.Text
+  auditScore    Float?  @map("audit_score")
+
+  // Relations
+  token Token @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([tokenId], map: "idx_reports_token_id")
+  @@index([createdAt], map: "idx_reports_created_at")
+  @@map("reports")
+}
